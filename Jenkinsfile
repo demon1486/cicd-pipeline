@@ -55,8 +55,8 @@ pipeline {
             steps {
                 script {
                     // Stop and remove existing containers
-                    sh "docker stop your_container_name || true"
-                    sh "docker rm your_container_name || true"
+                    sh "docker stop dev_container || true"
+                    sh "docker rm dev_container || true"
                 }
             }
         }
