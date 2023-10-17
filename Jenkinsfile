@@ -39,7 +39,7 @@ pipeline {
             }
             steps {
                 script {
-                    if (currentBuild.branchName == 'main') {
+                    if (BRANCH_NAME == 'main') {
                         sh "docker build -t nodemain:${MAIN_IMAGE_TAG} ."
                     } else {
                         sh "docker build -t nodedev:${DEV_IMAGE_TAG} ."
