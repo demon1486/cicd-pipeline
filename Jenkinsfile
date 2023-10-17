@@ -1,57 +1,77 @@
 pipeline {
-    agent any // This specifies that the pipeline can run on any available agent
+    agent any
+
+    environment {
+        NODEJS_VERSION = '14.17.6' // Set your desired Node.js version
+        MAIN_IMAGE_TAG = 'v1.0'
+        DEV_IMAGE_TAG = 'v1.0'
+    }
 
     stages {
-        stage('Checkout') {
+        stage('Prepare Environment') {
             steps {
-                // This step checks out your source code from your Git repository
                 script {
-                    checkout scm
+                    // Set Node.js version from the global tools configuration
+                    tool name: 'NodeJS', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
+                    sh "npm install -g n && n ${NODEJS_VERSION}"
+                    sh "node --version"
+                    sh "npm --version"
                 }
             }
         }
 
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                // Use Node.js tool defined in Jenkins Global Tool Configuration
-                tool name: 'NodeJS-7.8.0', type: 'ToolInstallation'
-
-                // This step installs project dependencies
-                sh 'npm install'
+                checkout scm
             }
         }
 
-        stage('Test') {
+        stage('Build and Test') {
             steps {
-                // This step runs tests for your application
-                sh 'npm test'
+                sh 'npm install' // Command for building the Node.js application
+                sh 'npm test'    // Command for testing the Node.js application
             }
         }
 
         stage('Build Docker Image') {
-            steps {
-                // This step builds Docker images for both "main" and "dev" branches
-                sh 'docker build -t nodemain:v1.0 .'
-                sh 'docker build -t nodedev:v1.0 .'
+            when {
+                expression { currentBuild.branchName == 'main' || currentBuild.branchName == 'dev' }
             }
-        }
-
-        stage('Container Management') {
-            steps {
-                // This step stops and removes any existing containers
-                sh 'docker stop $(docker ps -a -q)'
-                sh 'docker rm $(docker ps -a -q)'
-            }
-        }
-
-        stage('Run Application in Docker') {
             steps {
                 script {
-                    // Set the port number based on the branch
-                    def port = (env.BRANCH_NAME == 'main') ? 3000 : 3001
-                    // This step runs the application in a Docker container
-                    sh "docker run -d --expose $port -p $port:3000 " +
-                       ((env.BRANCH_NAME == 'main') ? 'nodemain:v1.0' : 'nodedev:v1.0')
+                    if (currentBuild.branchName == 'main') {
+                        sh "docker build -t nodemain:${MAIN_IMAGE_TAG} ."
+                    } else {
+                        sh "docker build -t nodedev:${DEV_IMAGE_TAG} ."
+                    }
+                }
+            }
+        }
+
+        stage('Cleanup Previous Containers') {
+            when {
+                expression { currentBuild.branchName == 'main' || currentBuild.branchName == 'dev' }
+            }
+            steps {
+                script {
+                    // Stop and remove existing containers
+                    sh "docker stop your_container_name || true"
+                    sh "docker rm your_container_name || true"
+                }
+            }
+        }
+
+        stage('Run Docker Container') {
+            when {
+                expression { currentBuild.branchName == 'main' || currentBuild.branchName == 'dev' }
+            }
+            steps {
+                script {
+                    if (currentBuild.branchName == 'main') {
+                        sh "docker run -d --expose 3000 -p 3000:3000 nodemain:${MAIN_IMAGE_TAG}"
+                    } else {
+                        sh "docker run -d --expose 3001 -p 3001:3000 nodedev:${DEV_IMAGE_TAG}"
+                    }
                 }
             }
         }
