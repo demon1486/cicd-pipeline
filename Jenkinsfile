@@ -11,9 +11,9 @@ pipeline {
         stage('Prepare Environment') {
             steps {
                 script {
-                    // Set Node.js version from the global tools configuration
-                    tool name: 'NodeJS', type: 'jenkins.plugins.nodejs.tools.NodeJSInstallation'
-                    sh "npm install -g n && n ${NODEJS_VERSION}"
+                    // Set Node.js version and environment variables
+                    env.PATH = "${tool 'NodeJS'}/bin:${env.PATH}"
+                    env.NODE_HOME = tool 'NodeJS'
                     sh "node --version"
                     sh "npm --version"
                 }
