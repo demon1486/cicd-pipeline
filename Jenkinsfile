@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        NODEJS_VERSION = '14.17.6' // Set your desired Node.js version
+        NODEJS_VERSION = '21.0.0' // Set your desired Node.js version
         MAIN_IMAGE_TAG = 'v1.0'
         DEV_IMAGE_TAG = 'v1.0'
     }
